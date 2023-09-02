@@ -1,16 +1,17 @@
 from typing import Callable, Optional
 from qiskit.primitives import BaseEstimator
 from .partial_unitary_projection_optimizer import PartialUnitaryProjectionOptimizer
-from qiskit.algorithms.minimum_eigensolvers import MinimumEigensolver
+from qiskit.algorithms.minimum_eigensolvers import MinimumEigensolver, MinimumEigensolverResult
 from qiskit.algorithms.exceptions import AlgorithmError
 from qiskit_nature.converters.second_quantization import QubitConverter
 from qiskit_nature.drivers.second_quantization import BaseDriver
 import torch
-import numpy as np
+from copy import deepcopy
+import copy
 
 from .opt_orb_minimum_eigensolver import OptOrbMinimumEigensolver, OptOrbMinimumEigensolverResult
 
-class OptOrbVQE(OptOrbMinimumEigensolver):
+class OptOrbAdaptVQE(OptOrbMinimumEigensolver):
 
     def __init__(self,
         molecule_driver: BaseDriver,
@@ -29,7 +30,6 @@ class OptOrbVQE(OptOrbMinimumEigensolver):
         minimum_eigensolver_callback_func: Optional[Callable] = None,
         orbital_rotation_callback_func: Optional[Callable] = None,
         partial_unitary_random_perturbation: Optional[float] = None,
-        minimum_eigensolver_random_perturbation: Optional[float] = None,
         RDM_ops_batchsize: Optional[int] = None,
         spin_restricted: Optional[bool] = False):
 
@@ -82,27 +82,20 @@ class OptOrbVQE(OptOrbMinimumEigensolver):
                          RDM_ops_batchsize=RDM_ops_batchsize,
                          spin_restricted=spin_restricted)
 
-        if ground_state_solver.__class__.__name__ != 'VQE':
+        if ground_state_solver.__class__.__name__ != 'AdaptVQE':
 
-            raise AlgorithmError(f"The ground state solver needs to be of type VQE, not {ground_state_solver.__class__.__name__}")
+            raise AlgorithmError(f"The ground state solver needs to be of type AdaptVQE, not {ground_state_solver.__class__.__name__}")
 
         if ground_state_solver is not None:
             for n in range(int(maxiter)):
-                self._ground_state_solver_list[n].callback = minimum_eigensolver_callback_func(n)
+                self._ground_state_solver_list[n].solver.callback = minimum_eigensolver_callback_func(n)
 
-        self.minimum_eigensolver_random_perturbation = minimum_eigensolver_random_perturbation
-
-    def parameter_update_rule(self, result: OptOrbMinimumEigensolverResult,
+    def parameter_update_rule(self, result: MinimumEigensolverResult,
                                     iteration: int):
-        
-        if self.minimum_eigensolver_random_perturbation == None or self.minimum_eigensolver_random_perturbation == 0.0:
-            self._ground_state_solver_list[iteration].initial_point = result.optimal_point
-        else:
-            print('Perturb VQE parameters!')
-            self._ground_state_solver_list[iteration].initial_point = result.optimal_point + np.random.normal(loc=0.0,
-                                                scale=self.minimum_eigensolver_random_perturbation, size=result.optimal_point.size)
 
-class OptOrbVQEResult(OptOrbMinimumEigensolverResult):
+        pass
+
+class OptOrbAdaptVQEResult(OptOrbMinimumEigensolverResult):
 
     def __init__(self) -> None:
         super().__init__()

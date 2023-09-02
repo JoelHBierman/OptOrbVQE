@@ -1,2 +1,6 @@
 from .opt_orb_vqe import OptOrbVQE, OptOrbVQEResult
+from .opt_orb_adapt_vqe import OptOrbAdaptVQE, OptOrbAdaptVQEResult
 from .partial_unitary_projection_optimizer import PartialUnitaryProjectionOptimizer
+
+from .base_opt_orb_solver import BaseOptOrbSolver, BaseOptOrbResult
+from .opt_orb_minimum_eigensolver import OptOrbMinimumEigensolver, OptOrbMinimumEigensolverResult
